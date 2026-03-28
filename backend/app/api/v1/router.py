@@ -4,7 +4,10 @@ StreetSense -- API v1 Router
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, complaints, geo, health, inference, lifecycle, notifications
+from app.api.v1.endpoints import (
+    analytics, auth, complaints, geo, health,
+    inference, lifecycle, live, notifications,
+)
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -15,3 +18,5 @@ api_router.include_router(inference.router)
 api_router.include_router(geo.router)
 api_router.include_router(lifecycle.router)
 api_router.include_router(notifications.router)
+api_router.include_router(analytics.router)
+api_router.include_router(live.router)

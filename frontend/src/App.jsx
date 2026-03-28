@@ -7,6 +7,8 @@ import DashboardPage from './pages/DashboardPage';
 import MapPage from './pages/MapPage';
 import UploadPage from './pages/UploadPage';
 import AuthorityPage from './pages/AuthorityPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import LiveDetectionPage from './pages/LiveDetectionPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
@@ -41,6 +43,8 @@ function AppLayout() {
           <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
           <Route path="/authority" element={<ProtectedRoute><AuthorityPage /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+          <Route path="/live" element={<ProtectedRoute><LiveDetectionPage /></ProtectedRoute>} />
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />

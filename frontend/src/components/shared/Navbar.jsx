@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Map, Shield, Upload, BarChart3, Activity, Bell, X, Check, LogOut, User } from 'lucide-react';
+import { Map, Shield, Upload, BarChart3, Activity, Bell, X, Check, LogOut, User, TrendingUp, Video } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -8,6 +8,8 @@ const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: BarChart3 },
   { path: '/map', label: 'Map', icon: Map },
   { path: '/upload', label: 'Report', icon: Upload },
+  { path: '/live', label: 'Live', icon: Video },
+  { path: '/analytics', label: 'Analytics', icon: TrendingUp },
   { path: '/authority', label: 'Authority', icon: Shield },
 ];
 
