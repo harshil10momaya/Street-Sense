@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-surface: #0a0f1a;
+  --color-surface-2: #111827;
+  --color-surface-3: #1e293b;
+  --color-border: #1e293b;
+  --color-accent: #16a34a;
+  --color-accent-glow: rgba(22, 163, 74, 0.15);
+}
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--color-surface);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* Leaflet dark theme overrides */
+.leaflet-container {
+  background: #0a0f1a;
+}
+.leaflet-tile-pane {
+  filter: brightness(0.7) contrast(1.1) saturate(0.8);
+}
+.leaflet-control-zoom a {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+.leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.leaflet-popup-tip {
+  background: #1e293b;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+/* Severity badge pulse */
+@keyframes pulse-severity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.severity-high {
+  animation: pulse-severity 2s ease-in-out infinite;
+}
