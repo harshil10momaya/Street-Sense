@@ -90,6 +90,7 @@ class ComplaintResponse(BaseModel):
     depth_map_path: Optional[str]
     annotated_image_path: Optional[str]
     source: str
+    created_by: Optional[UUID] = None
     status: str
     assigned_to: Optional[str]
     department: Optional[str]

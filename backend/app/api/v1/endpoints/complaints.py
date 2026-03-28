@@ -121,6 +121,7 @@ async def upload_and_detect(
             annotated_image_path=inference_result.get("annotated_image_url"),
             source=source,
             department=location_info.get("department"),
+            created_by=str(current_user.id),
         )
 
         # Trigger notification
@@ -165,13 +166,23 @@ async def list_complaints(
     sort_by: str = Query(default="created_at"),
     sort_order: str = Query(default="desc", regex="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     List complaints with filtering and pagination.
 
-    Filters: status, severity, issue_type, source
-    Sort: any field (default: created_at desc)
+    - Citizens: see only their own complaints
+    - Authority/Admin: see all complaints
     """
+    # Determine created_by filter based on role
+    user_role = current_user.role
+    if hasattr(user_role, "value"):
+        user_role = user_role.value
+
+    created_by_filter = None
+    if user_role == "citizen":
+        created_by_filter = str(current_user.id)
+
     complaints, total = await complaint_service.list_complaints(
         db=db,
         page=page,
@@ -180,6 +191,7 @@ async def list_complaints(
         severity=severity,
         issue_type=issue_type,
         source=source,
+        created_by=created_by_filter,
         sort_by=sort_by,
         sort_order=sort_order,
     )
@@ -197,12 +209,13 @@ async def list_complaints(
 # ===================================================================
 
 @router.get("/stats/dashboard")
-async def dashboard_stats(db: AsyncSession = Depends(get_db)):
+async def dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Get aggregate stats for the dashboard:
-    - Total complaints
-    - Recent (24h)
-    - By status, severity, issue type
+    Get aggregate stats for the dashboard.
+    Authority/Admin: full stats. Citizens: their own stats only.
     """
     stats = await complaint_service.get_dashboard_stats(db)
     return stats

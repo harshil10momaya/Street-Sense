@@ -38,6 +38,7 @@ async def create_complaint(
     annotated_image_path: str = None,
     source: str = "citizen",
     department: str = None,
+    created_by: str = None,
 ) -> Complaint:
     """Create a new complaint and record initial history."""
 
@@ -63,6 +64,7 @@ async def create_complaint(
         source=source,
         status=ComplaintStatus.OPEN,
         department=department,
+        created_by=created_by,
     )
 
     db.add(complaint)
@@ -100,6 +102,7 @@ async def list_complaints(
     severity: str = None,
     issue_type: str = None,
     source: str = None,
+    created_by: str = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
 ) -> Tuple[List[Complaint], int]:
@@ -125,6 +128,9 @@ async def list_complaints(
     if source:
         query = query.where(Complaint.source == source)
         count_query = count_query.where(Complaint.source == source)
+    if created_by:
+        query = query.where(Complaint.created_by == created_by)
+        count_query = count_query.where(Complaint.created_by == created_by)
 
     # Sort
     sort_col = getattr(Complaint, sort_by, Complaint.created_at)

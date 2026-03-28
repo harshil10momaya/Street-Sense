@@ -80,6 +80,7 @@ class Complaint(Base):
 
     # Source
     source = Column(String(50), default="camera")  # camera | citizen | feed
+    created_by = Column(UUID(as_uuid=True), nullable=True, index=True)  # User ID who created
 
     # Lifecycle
     status = Column(
