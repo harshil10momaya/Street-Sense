@@ -27,6 +27,7 @@ from app.schemas.complaint import (
     InferenceResponse,
 )
 from app.services import complaint_service, ai_service, geo_service
+from app.services.notification_service import notify
 from app.utils.file_utils import (
     get_relative_url,
     read_image_from_upload,
@@ -118,6 +119,12 @@ async def upload_and_detect(
             source=source,
             department=location_info.get("department"),
         )
+
+        # Trigger notification
+        try:
+            await notify.on_complaint_created(complaint, location_info)
+        except Exception as e:
+            logger.warning(f"Notification failed (non-blocking): {e}")
 
     await db.commit()
 
@@ -248,6 +255,12 @@ async def update_status(
 
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
+
+    # Trigger notification
+    try:
+        await notify.on_status_changed(complaint, body.status, body.status, body.notes)
+    except Exception as e:
+        logger.warning(f"Notification failed (non-blocking): {e}")
 
     await db.commit()
     return ComplaintResponse.model_validate(complaint)

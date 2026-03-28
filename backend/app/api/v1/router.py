@@ -1,12 +1,10 @@
 """
 StreetSense -- API v1 Router
-
-All endpoint routers under /api/v1.
 """
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import complaints, geo, health, inference, lifecycle
+from app.api.v1.endpoints import complaints, geo, health, inference, lifecycle, notifications
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -15,3 +13,4 @@ api_router.include_router(complaints.router)
 api_router.include_router(inference.router)
 api_router.include_router(geo.router)
 api_router.include_router(lifecycle.router)
+api_router.include_router(notifications.router)
