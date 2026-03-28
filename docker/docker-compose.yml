@@ -1,10 +1,4 @@
-# StreetSense — Local Development Services
-# Usage: docker compose up -d
-
-version: "3.9"
-
 services:
-  # ─── PostgreSQL Database ───
   postgres:
     image: postgres:16-alpine
     container_name: streetsense-db
@@ -13,18 +7,18 @@ services:
       POSTGRES_USER: streetsense
       POSTGRES_PASSWORD: streetsense_pass
       POSTGRES_DB: streetsense_db
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres -c listen_addresses=*
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U streetsense -d streetsense_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # ─── pgAdmin (optional database GUI) ───
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: streetsense-pgadmin
