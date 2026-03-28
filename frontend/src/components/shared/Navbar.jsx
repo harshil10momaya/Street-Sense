@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Map, Shield, Upload, BarChart3, Activity, Bell, X, Check } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Map, Shield, Upload, BarChart3, Activity, Bell, X, Check, LogOut, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '../../hooks/useAuth';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -19,6 +20,8 @@ const SEVERITY_COLORS = {
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -177,6 +180,26 @@ export default function Navbar() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* User Menu */}
+            <div className="flex items-center gap-2 ml-3 pl-3 border-l border-gray-800">
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-brand-600/20 flex items-center justify-center">
+                  <User size={14} className="text-brand-400" />
+                </div>
+                <div className="text-xs">
+                  <p className="text-gray-300 font-medium leading-tight">{user?.full_name?.split(' ')[0]}</p>
+                  <p className="text-gray-600 leading-tight">{user?.role}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { logout(); navigate('/login'); }}
+                className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-800/50 transition-all"
+                title="Sign out"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           </div>
         </div>

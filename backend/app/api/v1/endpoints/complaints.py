@@ -28,6 +28,8 @@ from app.schemas.complaint import (
 )
 from app.services import complaint_service, ai_service, geo_service
 from app.services.notification_service import notify
+from app.services.auth_service import get_current_user, get_current_user_optional, require_role
+from app.models.user import User
 from app.utils.file_utils import (
     get_relative_url,
     read_image_from_upload,
@@ -49,6 +51,7 @@ async def upload_and_detect(
     longitude: float = Form(...),
     source: str = Form(default="citizen"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload an image for AI-powered road damage detection.
@@ -230,6 +233,7 @@ async def update_status(
     complaint_id: uuid.UUID,
     body: ComplaintUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("authority", "admin")),
 ):
     """
     Update a complaint's status.

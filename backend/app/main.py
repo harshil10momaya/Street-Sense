@@ -22,6 +22,10 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.db.session import close_db, init_db
+# Import all models so Base.metadata.create_all sees them
+from app.models.complaint import Complaint  # noqa: F401
+from app.models.history import ComplaintHistory  # noqa: F401
+from app.models.user import User  # noqa: F401
 
 
 # ─── Lifespan (replaces deprecated on_event) ───
