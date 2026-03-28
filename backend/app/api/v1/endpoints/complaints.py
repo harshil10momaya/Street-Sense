@@ -26,7 +26,7 @@ from app.schemas.complaint import (
     HistoryEntry,
     InferenceResponse,
 )
-from app.services import complaint_service, ai_service
+from app.services import complaint_service, ai_service, geo_service
 from app.utils.file_utils import (
     get_relative_url,
     read_image_from_upload,
@@ -84,9 +84,18 @@ async def upload_and_detect(
         logger.error(f"Inference failed: {e}")
         raise HTTPException(status_code=500, detail="AI inference failed")
 
-    # Create a complaint for each detection
+    # Create a complaint for each detection (with geo-tagging + routing)
     for det in inference_result["detections"]:
         bbox = det["bbox"]
+
+        # Geo-tag and route
+        location_info = geo_service.process_location(
+            latitude=latitude,
+            longitude=longitude,
+            issue_type=det["issue_type"],
+            severity=det["severity"],
+        )
+
         await complaint_service.create_complaint(
             db=db,
             issue_type=det["issue_type"],
@@ -100,10 +109,14 @@ async def upload_and_detect(
             bbox_h=bbox["h"],
             latitude=latitude,
             longitude=longitude,
+            address=location_info.get("address"),
+            ward=location_info.get("ward"),
+            zone=location_info.get("zone"),
             image_path=image_url,
             depth_map_path=inference_result.get("depth_map_url"),
             annotated_image_path=inference_result.get("annotated_image_url"),
             source=source,
+            department=location_info.get("department"),
         )
 
     await db.commit()
