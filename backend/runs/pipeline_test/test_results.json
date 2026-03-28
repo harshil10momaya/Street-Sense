@@ -1,0 +1,39 @@
+{
+  "detection_count": 1,
+  "detections": [
+    {
+      "class_id": 3,
+      "class_name": "garbage",
+      "confidence": 0.6924,
+      "bbox": {
+        "x1": 1418.8,
+        "y1": 1677.7,
+        "x2": 1663.0,
+        "y2": 1965.1,
+        "width": 244.2,
+        "height": 287.5,
+        "area": 70203.2
+      },
+      "depth": {
+        "avg_depth": 0.4364,
+        "min_depth": 0.3821,
+        "max_depth": 0.4975,
+        "surrounding_depth": 0.4378,
+        "depth_contrast": 0.0014,
+        "std_depth": 0.0255
+      },
+      "severity": "low",
+      "severity_score": 0.0749
+    }
+  ],
+  "image_shape": [
+    3264,
+    2448
+  ],
+  "processing_time_ms": 799.0,
+  "severity_summary": {
+    "low": 1,
+    "medium": 0,
+    "high": 0
+  }
+}
