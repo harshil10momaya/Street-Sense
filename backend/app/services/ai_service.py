@@ -4,25 +4,29 @@ StreetSense -- AI Service
 Manages the inference pipeline lifecycle and provides
 a clean interface for the API layer.
 
-- Loads models on startup (or lazily on first request)
-- Runs inference on uploaded images
-- Returns structured detection results
+Key fix: runs heavy CPU inference in a thread pool executor
+so it doesn't block the async event loop / cause timeouts.
 """
 
+import asyncio
 import cv2
 import numpy as np
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 from loguru import logger
 
 from app.core.config import settings
 from app.utils.file_utils import save_image, get_relative_url
 
 
-# Global pipeline instance (loaded once, reused)
+# Global pipeline instance
 _pipeline = None
 _pipeline_loading = False
+
+# Thread pool for CPU-heavy inference (1 worker = sequential processing)
+_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ai-inference")
 
 
 def get_pipeline():
@@ -33,7 +37,7 @@ def get_pipeline():
         return _pipeline
 
     if _pipeline_loading:
-        raise RuntimeError("Pipeline is currently loading. Please wait.")
+        raise RuntimeError("Pipeline is currently loading. Please try again in a moment.")
 
     _pipeline_loading = True
     try:
@@ -42,7 +46,6 @@ def get_pipeline():
         weights_path = settings.weights_path
         if not weights_path.exists():
             logger.warning(f"YOLO weights not found at {weights_path}")
-            logger.warning("AI inference will not be available until weights are placed.")
             _pipeline_loading = False
             return None
 
@@ -60,7 +63,6 @@ def get_pipeline():
 
     except Exception as e:
         logger.error(f"Failed to load AI pipeline: {e}")
-        _pipeline_loading = False
         raise
     finally:
         _pipeline_loading = False
@@ -71,28 +73,16 @@ def is_pipeline_loaded() -> bool:
     return _pipeline is not None and _pipeline.is_loaded
 
 
-async def run_inference(
-    image: np.ndarray,
-    image_id: str = None,
-) -> dict:
+def _run_inference_sync(image: np.ndarray, image_id: str) -> dict:
     """
-    Run the full AI pipeline on an image.
-
-    Args:
-        image: BGR image (numpy array)
-        image_id: Optional identifier for this image
-
-    Returns:
-        Dict with detections, saved file paths, processing time
+    Synchronous inference -- runs in thread pool.
+    This is the heavy CPU work (YOLO + MiDaS).
     """
     pipeline = get_pipeline()
     if pipeline is None:
         raise RuntimeError(
             "AI pipeline not available. Place best.pt in backend/ai/weights/"
         )
-
-    if image_id is None:
-        image_id = uuid.uuid4().hex[:12]
 
     # Run pipeline
     result = pipeline.process_image(image, generate_visuals=True)
@@ -143,3 +133,24 @@ async def run_inference(
         "processing_time_ms": round(result.processing_time_ms, 1),
         "image_shape": list(result.image_shape),
     }
+
+
+async def run_inference(
+    image: np.ndarray,
+    image_id: str = None,
+) -> dict:
+    """
+    Run the full AI pipeline on an image.
+    Offloads heavy CPU work to a thread pool so it doesn't block the event loop.
+    """
+    if image_id is None:
+        image_id = uuid.uuid4().hex[:12]
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        _executor,
+        _run_inference_sync,
+        image,
+        image_id,
+    )
+    return result

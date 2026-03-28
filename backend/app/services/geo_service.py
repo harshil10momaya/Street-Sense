@@ -13,6 +13,15 @@ import functools
 from typing import Optional, Tuple
 from loguru import logger
 
+# Import geopy at module level with fallback
+try:
+    from geopy.geocoders import Nominatim
+    from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+    GEOPY_AVAILABLE = True
+except ImportError:
+    GEOPY_AVAILABLE = False
+    logger.warning("geopy not installed. Geocoding disabled. Install: pip install geopy")
+
 
 # ===================================================================
 # Reverse Geocoding
@@ -44,8 +53,8 @@ def reverse_geocode(latitude: float, longitude: float) -> dict:
         return _geocode_cache[cache_key]
 
     try:
-        from geopy.geocoders import Nominatim
-        from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+        if not GEOPY_AVAILABLE:
+            return _empty_geo_result(latitude, longitude)
 
         geolocator = Nominatim(
             user_agent="streetsense-app",

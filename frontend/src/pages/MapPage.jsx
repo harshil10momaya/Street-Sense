@@ -10,7 +10,7 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
 
   const load = () => {
-    fetchComplaints({ perPage: 200 })
+    fetchComplaints({ perPage: 100 })
       .then(data => setComplaints(data.complaints || []))
       .catch(() => {})
       .finally(() => setLoading(false));
