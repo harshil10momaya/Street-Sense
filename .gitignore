@@ -81,3 +81,7 @@ backend/runs/
 
 # Uploads
 backend/uploads/
+
+*.pt
+ai/weights/
+backend/ai/weights/
