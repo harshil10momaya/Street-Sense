@@ -1,9 +1,9 @@
 """
-StreetSense — Smartathon Label Cleaner
+StreetSense -- Smartathon Label Cleaner
 
 Cleans the Smartathon dataset's messy YOLO labels:
-- Multiple variants: pothole, Pothole, potholes, etc. → pothole (class 0)
-- Manhole variations → manhole (class 2)
+- Multiple variants: pothole, Pothole, potholes, etc. -> pothole (class 0)
+- Manhole variations -> manhole (class 2)
 - Removes: object, unknown, irrelevant classes
 
 The Smartathon dataset exports from Roboflow with a classes.txt or data.yaml
@@ -100,7 +100,7 @@ def normalize_label(raw_label: str) -> Optional[str]:
         if pattern in label:
             return "manhole"
 
-    # Everything else → REMOVE
+    # Everything else -> REMOVE
     return None
 
 

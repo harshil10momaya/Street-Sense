@@ -1,11 +1,11 @@
 """
-StreetSense — Dataset Downloader
+StreetSense -- Dataset Downloader
 
 Automatically downloads all 4 datasets from their sources:
-  1. Smartathon (Roboflow) → potholes + manholes
-  2. Andrew Pothole (Kaggle) → potholes
-  3. RDD 2022 (Kaggle) → road cracks
-  4. TACO (Kaggle) → garbage
+  1. Smartathon (Roboflow) -> potholes + manholes
+  2. Andrew Pothole (Kaggle) -> potholes
+  3. RDD 2022 (Kaggle) -> road cracks
+  4. TACO (Kaggle) -> garbage
 
 Prerequisites:
     pip install roboflow kaggle
@@ -48,13 +48,13 @@ def download_smartathon(api_key: str) -> bool:
     dest.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'='*60}")
-    print(f"[1/4] Smartathon — Pothole + Manhole (Roboflow)")
+    print(f"[1/4] Smartathon -- Pothole + Manhole (Roboflow)")
     print(f"{'='*60}")
 
     try:
         from roboflow import Roboflow
     except ImportError:
-        print("❌ Install roboflow: pip install roboflow")
+        print("[ERROR] Install roboflow: pip install roboflow")
         return False
 
     try:
@@ -63,10 +63,10 @@ def download_smartathon(api_key: str) -> bool:
         project = rf.workspace(rf_cfg["workspace"]).project(rf_cfg["project"])
         version = project.version(rf_cfg["version"])
         dataset = version.download("yolov8", location=str(dest))
-        print(f"✅ Smartathon downloaded to: {dest}")
+        print(f"[OK] Smartathon downloaded to: {dest}")
         return True
     except Exception as e:
-        print(f"❌ Smartathon download failed: {e}")
+        print(f"[ERROR] Smartathon download failed: {e}")
         print(f"   Manual download: https://universe.roboflow.com/smartathon/new-pothole-detection")
         print(f"   Download as YOLOv8 format, extract to: {dest}")
         return False
@@ -83,10 +83,10 @@ def download_kaggle_dataset(dataset_slug: str, dest: Path, name: str) -> bool:
     has_env = os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")
 
     if not kaggle_json.exists() and not has_env:
-        print(f"  ❌ Kaggle credentials not found!")
+        print(f"  [ERROR] Kaggle credentials not found!")
         print(f"     Option 1: Place kaggle.json in ~/.kaggle/kaggle.json")
         print(f"     Option 2: Set KAGGLE_USERNAME and KAGGLE_KEY env vars")
-        print(f"     Get credentials from: https://www.kaggle.com/settings → API → Create New Token")
+        print(f"     Get credentials from: https://www.kaggle.com/settings -> API -> Create New Token")
         return False
 
     try:
@@ -109,27 +109,27 @@ def download_kaggle_dataset(dataset_slug: str, dest: Path, name: str) -> bool:
             result = subprocess.run(cmd_no_unzip, capture_output=True, text=True, timeout=600)
 
             if result.returncode != 0:
-                print(f"  ❌ Kaggle download failed: {result.stderr}")
+                print(f"  [ERROR] Kaggle download failed: {result.stderr}")
                 return False
 
             # Find and extract zip files
             for zip_file in dest.glob("*.zip"):
-                print(f"  📦 Extracting: {zip_file.name}")
+                print(f"  [EXTRACT] Extracting: {zip_file.name}")
                 with zipfile.ZipFile(zip_file, "r") as zf:
                     zf.extractall(dest)
                 zip_file.unlink()  # Remove zip after extraction
 
-        print(f"  ✅ {name} downloaded to: {dest}")
+        print(f"  [OK] {name} downloaded to: {dest}")
         return True
 
     except FileNotFoundError:
-        print(f"  ❌ kaggle CLI not found. Install: pip install kaggle")
+        print(f"  [ERROR] kaggle CLI not found. Install: pip install kaggle")
         return False
     except subprocess.TimeoutExpired:
-        print(f"  ❌ Download timed out (>10 min). Try manual download.")
+        print(f"  [ERROR] Download timed out (>10 min). Try manual download.")
         return False
     except Exception as e:
-        print(f"  ❌ Download failed: {e}")
+        print(f"  [ERROR] Download failed: {e}")
         return False
 
 
@@ -150,7 +150,7 @@ def download_andrew(api_key: str = None) -> bool:
 def download_rdd2022(api_key: str = None) -> bool:
     """Download RDD 2022 road damage dataset from Kaggle."""
     print(f"\n{'='*60}")
-    print(f"[3/4] RDD 2022 — Road Cracks (Kaggle)")
+    print(f"[3/4] RDD 2022 -- Road Cracks (Kaggle)")
     print(f"{'='*60}")
 
     cfg = RDD2022_CONFIG
@@ -164,7 +164,7 @@ def download_rdd2022(api_key: str = None) -> bool:
 def download_taco(api_key: str = None) -> bool:
     """Download TACO trash dataset from Kaggle."""
     print(f"\n{'='*60}")
-    print(f"[4/4] TACO — Garbage Detection (Kaggle)")
+    print(f"[4/4] TACO -- Garbage Detection (Kaggle)")
     print(f"{'='*60}")
 
     cfg = TACO_CONFIG
@@ -192,7 +192,7 @@ def scan_downloaded():
             txt_files = [f for f in files if f.suffix.lower() == ".txt" and f.stem != "classes"]
             json_files = [f for f in files if f.suffix.lower() == ".json"]
 
-            print(f"\n  📂 {name}/")
+            print(f"\n  [DIR] {name}/")
             print(f"     Total files:  {len(files)}")
             print(f"     Images:       {len(img_files)}")
             print(f"     XML labels:   {len(xml_files)}")
@@ -203,7 +203,7 @@ def scan_downloaded():
             top_items = sorted([f.name for f in raw_dir.iterdir()])[:10]
             print(f"     Contents:     {', '.join(top_items)}")
         else:
-            print(f"\n  ❌ {name}/ — NOT DOWNLOADED")
+            print(f"\n  [ERROR] {name}/ -- NOT DOWNLOADED")
 
 
 def main():
@@ -221,7 +221,7 @@ def main():
     targets = args.only or ["smartathon", "andrew", "rdd2022", "taco"]
 
     print("=" * 60)
-    print("StreetSense — Dataset Downloader")
+    print("StreetSense -- Dataset Downloader")
     print("=" * 60)
     print(f"Output: {RAW_DIR}")
     print(f"Targets: {targets}")
@@ -251,11 +251,11 @@ def main():
     print(f"  Downloaded: {success}/{total}")
 
     if success == total:
-        print(f"\n  ✅ All datasets downloaded!")
+        print(f"\n  [OK] All datasets downloaded!")
         print(f"     Next: python scripts/data_prep/convert_and_clean.py")
     else:
         failed = [k for k, v in results.items() if not v]
-        print(f"\n  ⚠️  Failed: {failed}")
+        print(f"\n  [WARN]  Failed: {failed}")
         print(f"     Download manually and place in: {RAW_DIR}/<dataset_name>/")
         print(f"     Then run: python scripts/data_prep/convert_and_clean.py")
 

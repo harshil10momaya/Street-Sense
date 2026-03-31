@@ -13,7 +13,7 @@ build/
 venv/
 .venv/
 env/
-.env 
+
 # IDE
 .vscode/
 .idea/
@@ -25,15 +25,19 @@ env/
 .env
 .env.local
 .env.production
+!backend/.env.example
 
-# AI Weights (large files)
-backend/ai/weights/*.pt
-backend/ai/weights/*.onnx
-backend/ai/weights/*.pth
+# AI Weights (track via Git LFS for deployment)
+# If using Git LFS, remove these lines:
+# backend/ai/weights/*.pt
+# backend/ai/weights/*.onnx
+# backend/ai/weights/*.pth
 !backend/ai/weights/.gitkeep
 
+# Frontend build output (keep for deployment)
+# backend/static/ is the production build -- DO NOT ignore
+
 # Data
-data/datasets/*
 data/raw/*
 data/processed/*
 data/feeds/*
@@ -65,3 +69,15 @@ logs/
 htmlcov/
 .coverage
 .pytest_cache/
+
+data/datasets/
+data/raw/
+data/processed/
+data/feeds/
+data/annotations/
+
+# AI training runs
+backend/runs/
+
+# Uploads
+backend/uploads/

@@ -1,5 +1,5 @@
 """
-StreetSense — Pascal VOC (XML) to YOLO Format Converter
+StreetSense -- Pascal VOC (XML) to YOLO Format Converter
 
 Converts Pascal VOC XML annotation files to YOLO format:
     VOC:  <object><name>D20</name><bndbox><xmin>10</xmin>...</bndbox></object>
@@ -36,7 +36,7 @@ def parse_voc_xml(xml_path: Path) -> Optional[dict]:
         tree = ET.parse(xml_path)
         root = tree.getroot()
     except (ET.ParseError, FileNotFoundError) as e:
-        print(f"    ⚠️  Cannot parse {xml_path.name}: {e}")
+        print(f"    [WARN]  Cannot parse {xml_path.name}: {e}")
         return None
 
     # Get image filename
@@ -121,9 +121,9 @@ def voc_to_yolo_line(
     if mapped_name is None:
         # None means REMOVE this class
         if obj_name in label_map:
-            return None  # Explicitly mapped to None → skip
+            return None  # Explicitly mapped to None -> skip
         else:
-            # Unknown label not in map → skip with warning
+            # Unknown label not in map -> skip with warning
             return None
 
     # Get class ID
@@ -131,7 +131,7 @@ def voc_to_yolo_line(
     if class_id is None:
         return None
 
-    # Convert bbox: VOC (xmin,ymin,xmax,ymax) → YOLO (x_center,y_center,w,h) normalized
+    # Convert bbox: VOC (xmin,ymin,xmax,ymax) -> YOLO (x_center,y_center,w,h) normalized
     xmin, ymin, xmax, ymax = bbox
 
     # Clamp to image bounds

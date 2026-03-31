@@ -444,13 +444,78 @@ def process_taco(collected_images, collected_labels, stats):
 
 
 # ===================================================================
-# 5. MANHOLE (Roboflow YOLO -- optional extra dataset)
+# 5. MANHOLE (Roboflow YOLO -- manhole-cover-byh6y)
 # ===================================================================
+
+def detect_manhole_classes(raw_dir):
+    """Detect original class names from the manhole dataset's data.yaml or classes.txt."""
+    import re
+    original_classes = {}
+
+    # Try data.yaml
+    for yaml_file in raw_dir.rglob("*.yaml"):
+        content = yaml_file.read_text()
+        in_names = False
+        for line in content.split("\n"):
+            line = line.strip()
+            if line.startswith("names:"):
+                in_names = True
+                # Inline list: names: ['manhole cover']
+                match = re.search(r"names:\s*\[(.+)\]", line)
+                if match:
+                    names = [n.strip().strip("'\"") for n in match.group(1).split(",")]
+                    for i, name in enumerate(names):
+                        original_classes[i] = name
+                    return original_classes
+                continue
+            if in_names:
+                match = re.match(r"(\d+):\s*(.+)", line)
+                if match:
+                    original_classes[int(match.group(1))] = match.group(2).strip().strip("'\"")
+                elif line and not line.startswith("#") and not line.startswith("-"):
+                    break
+        if original_classes:
+            return original_classes
+
+    # Try classes.txt
+    for classes_file in raw_dir.rglob("classes.txt"):
+        for i, line in enumerate(classes_file.read_text().strip().split("\n")):
+            name = line.strip()
+            if name:
+                original_classes[i] = name
+        if original_classes:
+            return original_classes
+
+    return original_classes
+
+
+def validate_image_basic(img_path):
+    """Quick image validation -- check file is readable and non-tiny."""
+    try:
+        from PIL import Image
+        img = Image.open(img_path)
+        w, h = img.size
+        if w < 32 or h < 32:
+            return False, f"Too small ({w}x{h})"
+        img.verify()
+        return True, None
+    except ImportError:
+        # PIL not available, skip validation
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
 
 def process_manhole(collected_images, collected_labels, stats):
     """Process manhole dataset from Roboflow (YOLO format).
-    All labels get remapped to manhole (class 2).
-    If directory doesn't exist, gracefully skip.
+
+    Steps:
+      1. Detect original class names from data.yaml/classes.txt
+      2. Build remap: ALL classes -> manhole (class 2)
+      3. Read each label file, remap class IDs
+      4. Validate bounding boxes (remove invalid ones)
+      5. Validate images (remove corrupt/tiny ones)
+      6. Collect for final merge
     """
     raw_dir = MANHOLE_CONFIG["raw_dir"]
     target_id = CLASS_NAME_TO_ID["manhole"]
@@ -458,17 +523,26 @@ def process_manhole(collected_images, collected_labels, stats):
     safe_print(f"\n{'='*60}")
     safe_print(f"[5/5] MANHOLE -- Manhole Covers (YOLO)")
     safe_print(f"{'='*60}")
+    safe_print(f"  Source: {MANHOLE_CONFIG.get('roboflow_url', 'Roboflow')}")
 
     if not raw_dir.exists():
         safe_print(f"  [SKIP] Not found: {raw_dir}")
         safe_print(f"  To add manhole data:")
-        safe_print(f"    1. Go to: https://universe.roboflow.com/manhole-jyxfj/manhole-cover-jyxfj")
+        safe_print(f"    1. Go to: {MANHOLE_CONFIG.get('roboflow_url', 'Roboflow')}")
         safe_print(f"    2. Download as YOLOv8 format")
         safe_print(f"    3. Extract to: {raw_dir}")
         safe_print(f"    4. Re-run this script")
         return
 
-    # Find YOLO image-label pairs
+    # Step 1: Detect original class names
+    original_classes = detect_manhole_classes(raw_dir)
+    if original_classes:
+        safe_print(f"  Original classes detected: {original_classes}")
+        safe_print(f"  ALL -> manhole (class {target_id})")
+    else:
+        safe_print(f"  [WARN] Could not detect class names. Remapping all to manhole.")
+
+    # Step 2: Find YOLO image-label pairs
     pairs = []
     for split in ["train", "valid", "val", "test"]:
         img_dir = raw_dir / split / "images"
@@ -479,8 +553,8 @@ def process_manhole(collected_images, collected_labels, stats):
                     lbl = lbl_dir / f"{img.stem}.txt"
                     pairs.append((img, lbl if lbl.exists() else None))
 
+    # Flat structure fallback
     if not pairs:
-        # Flat structure fallback
         img_dir = raw_dir / "images"
         lbl_dir = raw_dir / "labels"
         if img_dir.exists():
@@ -496,16 +570,32 @@ def process_manhole(collected_images, collected_labels, stats):
 
     safe_print(f"  Found {len(pairs)} image-label pairs")
 
+    # Tracking
+    corrupt_images = 0
+    empty_labels = 0
+    invalid_bbox = 0
+
     for img_file, label_file in pairs:
+        # Step 3: Skip missing labels
         if not label_file or not label_file.exists():
+            empty_labels += 1
             stats.images_skipped += 1
             continue
 
         content = label_file.read_text().strip()
         if not content:
+            empty_labels += 1
             stats.images_skipped += 1
             continue
 
+        # Step 4: Validate image
+        is_valid, err_msg = validate_image_basic(img_file)
+        if not is_valid:
+            corrupt_images += 1
+            stats.images_skipped += 1
+            continue
+
+        # Step 5: Read and remap labels
         yolo_lines = []
         for line in content.split("\n"):
             line = line.strip()
@@ -513,16 +603,37 @@ def process_manhole(collected_images, collected_labels, stats):
                 continue
             parts = line.split()
             if len(parts) < 5:
-                continue
-            try:
-                x, y, w, h = float(parts[1]), float(parts[2]), float(parts[3]), float(parts[4])
-            except ValueError:
+                invalid_bbox += 1
                 continue
 
-            x = max(0, min(1, x))
-            y = max(0, min(1, y))
-            w = max(0.001, min(1, w))
-            h = max(0.001, min(1, h))
+            try:
+                orig_class = int(parts[0])
+                x = float(parts[1])
+                y = float(parts[2])
+                w = float(parts[3])
+                h = float(parts[4])
+            except ValueError:
+                invalid_bbox += 1
+                continue
+
+            # Validate bbox ranges
+            if x < -0.5 or x > 1.5 or y < -0.5 or y > 1.5:
+                invalid_bbox += 1
+                continue
+            if w <= 0 or h <= 0 or w > 1.5 or h > 1.5:
+                invalid_bbox += 1
+                continue
+
+            # Clamp to valid range
+            x = max(0.0, min(1.0, x))
+            y = max(0.0, min(1.0, y))
+            w = max(0.001, min(1.0, w))
+            h = max(0.001, min(1.0, h))
+
+            # Skip extremely tiny boxes (likely noise)
+            if w * h < 0.0005:
+                invalid_bbox += 1
+                continue
 
             # ALL classes -> manhole (class 2)
             yolo_lines.append(f"{target_id} {x:.6f} {y:.6f} {w:.6f} {h:.6f}")
@@ -536,6 +647,14 @@ def process_manhole(collected_images, collected_labels, stats):
         collected_images.append((img_file, f"manhole_{img_file.name}"))
         collected_labels.append((yolo_lines, f"manhole_{img_file.stem}.txt"))
         stats.images_processed += 1
+
+    # Report cleaning stats
+    if corrupt_images > 0:
+        safe_print(f"  Corrupt/tiny images removed: {corrupt_images}")
+    if empty_labels > 0:
+        safe_print(f"  Empty/missing labels skipped: {empty_labels}")
+    if invalid_bbox > 0:
+        safe_print(f"  Invalid bounding boxes removed: {invalid_bbox}")
 
     safe_print(stats.summary())
 

@@ -16,4 +16,9 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Build output goes to backend/static/ for production serving
+    outDir: '../backend/static',
+    emptyOutDir: true,
+  },
 })

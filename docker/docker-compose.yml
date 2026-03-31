@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,12 +9,17 @@ services:
       POSTGRES_USER: streetsense
       POSTGRES_PASSWORD: streetsense_pass
       POSTGRES_DB: streetsense_db
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --auth-local=trust"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    command: postgres -c listen_addresses=*
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    command: >
+      postgres
+        -c listen_addresses='*'
+        -c password_encryption=md5
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U streetsense -d streetsense_db"]
       interval: 10s

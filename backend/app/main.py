@@ -108,7 +108,7 @@ def create_app() -> FastAPI:
             },
         )
 
-    # ─── Static Files (uploaded images) ───
+    # --- Static Files (uploaded images) ---
     upload_path = settings.upload_path
     if upload_path.exists():
         app.mount(
@@ -117,18 +117,46 @@ def create_app() -> FastAPI:
             name="uploads",
         )
 
-    # ─── Routers ───
+    # --- Routers ---
     app.include_router(api_router)
 
-    # ─── Root Endpoint ───
-    @app.get("/", tags=["root"])
-    async def root():
-        return {
-            "name": settings.app_name,
-            "version": settings.app_version,
-            "docs": "/docs",
-            "health": "/api/v1/health",
-        }
+    # --- Serve Frontend (production) ---
+    # In production, the React build is served from backend/static/
+    frontend_dir = BASE_DIR / "static"
+    if frontend_dir.exists() and (frontend_dir / "index.html").exists():
+        from fastapi.responses import FileResponse
+
+        # Serve static assets (JS, CSS, images)
+        app.mount(
+            "/assets",
+            StaticFiles(directory=str(frontend_dir / "assets")),
+            name="frontend-assets",
+        )
+
+        # Catch-all: serve index.html for all non-API routes (SPA routing)
+        @app.get("/{full_path:path}", tags=["frontend"])
+        async def serve_frontend(full_path: str):
+            # Don't catch API or upload routes
+            if full_path.startswith("api/") or full_path.startswith("uploads/") or full_path.startswith("docs") or full_path.startswith("openapi"):
+                return JSONResponse(status_code=404, content={"detail": "Not found"})
+            # Serve actual files if they exist (favicon, etc.)
+            file_path = frontend_dir / full_path
+            if file_path.is_file():
+                return FileResponse(str(file_path))
+            # Otherwise serve index.html (React SPA router handles it)
+            return FileResponse(str(frontend_dir / "index.html"))
+
+        logger.info(f"Serving frontend from {frontend_dir}")
+    else:
+        # Development mode -- no frontend build, just API
+        @app.get("/", tags=["root"])
+        async def root():
+            return {
+                "name": settings.app_name,
+                "version": settings.app_version,
+                "docs": "/docs",
+                "health": "/api/v1/health",
+            }
 
     return app
 

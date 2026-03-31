@@ -1,0 +1,8 @@
+[phases.setup]
+aptPkgs = ["libgl1-mesa-glx", "libglib2.0-0", "libpq-dev"]
+
+[phases.install]
+cmds = ["cd backend && pip install -r requirements.txt && pip install email-validator bcrypt==4.2.1"]
+
+[start]
+cmd = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"

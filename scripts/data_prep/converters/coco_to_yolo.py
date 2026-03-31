@@ -1,8 +1,8 @@
 """
-StreetSense — COCO JSON to YOLO Format Converter
+StreetSense -- COCO JSON to YOLO Format Converter
 
 Converts COCO-format annotations (annotations.json) to YOLO format.
-Specifically designed for TACO dataset where ALL categories → garbage.
+Specifically designed for TACO dataset where ALL categories -> garbage.
 
 COCO format:
     {
@@ -27,13 +27,13 @@ def load_coco_json(json_path: Path) -> Optional[dict]:
         with open(json_path) as f:
             data = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError) as e:
-        print(f"    ❌ Cannot load {json_path}: {e}")
+        print(f"    [ERROR] Cannot load {json_path}: {e}")
         return None
 
     # Validate required fields
     for key in ["images", "annotations"]:
         if key not in data:
-            print(f"    ❌ Missing '{key}' in COCO JSON")
+            print(f"    [ERROR] Missing '{key}' in COCO JSON")
             return None
 
     return data
@@ -54,7 +54,7 @@ def convert_coco_to_yolo(
                         If None, ALL categories map to target_class_id
 
     Returns:
-        Dict mapping image_filename → list of YOLO format lines
+        Dict mapping image_filename -> list of YOLO format lines
     """
     # Build lookups
     img_lookup = {}
