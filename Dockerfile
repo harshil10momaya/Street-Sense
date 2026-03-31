@@ -4,10 +4,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# System dependencies for OpenCV, PostgreSQL
+# System dependencies for OpenCV, YOLO, MiDaS
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    ffmpeg \
+    git \
     libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -25,8 +29,8 @@ COPY backend/ .
 # Create directories
 RUN mkdir -p uploads logs ai/weights
 
-# Expose port (Railway sets PORT env var)
+# Expose port
 EXPOSE 8000
 
-# Start command -- Railway provides PORT
+# Start command
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1
